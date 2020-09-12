@@ -9,6 +9,10 @@ from tqdm import tqdm
 warnings.filterwarnings(action='ignore', module='.*paramiko.*')
 
 
+class DevnetException(Exception):
+    pass
+
+
 class TqdmWrap(tqdm):
     def view_progressbar(self, a, b):
         self.total = b
@@ -58,26 +62,29 @@ class SSHClient:
         self.__conn.load_system_host_keys()
         self.__conn.set_missing_host_key_policy(paramiko.AutoAddPolicy)
 
-        self.__conn.connect(*args, **kwargs)
-        self.channel = self.__conn.invoke_shell(width=160, height=2048)
-        self.channel.settimeout(5.0)
-
-        count = 0
-        while True:
-            if count >= self.max_iterations:
-                sys.stdout.write('Max iterations exceeded!')
-                break
-
-            if self.channel.recv_ready():
-                count = 0
-                time.sleep(self.wait_time)
-
-                self.output += self.channel.recv(self.buffer).decode('UTF-8')
-                if re.search(expect_string, self.output, flags=re.IGNORECASE | re.MULTILINE):
+        try:
+            self.__conn.connect(*args, **kwargs)
+            self.channel = self.__conn.invoke_shell(width=160, height=2048)
+            self.channel.settimeout(5.0)
+        except paramiko.ssh_exception as e:
+            raise DevnetException(e)
+        else:
+            count = 0
+            while True:
+                if count >= self.max_iterations:
+                    sys.stdout.write('Max iterations exceeded!')
                     break
-            else:
-                count += 1
-                time.sleep(self.wait_time)
+
+                if self.channel.recv_ready():
+                    count = 0
+                    time.sleep(self.wait_time)
+
+                    self.output += self.channel.recv(self.buffer).decode('UTF-8')
+                    if re.search(expect_string, self.output, flags=re.IGNORECASE | re.MULTILINE):
+                        break
+                else:
+                    count += 1
+                    time.sleep(self.wait_time)
 
     def disconnect(self):
         if self.channel:
@@ -97,9 +104,13 @@ class SSHClient:
                 break
 
             if self.channel.send_ready():
-                self.channel.sendall(f'{command}\n')
-                time.sleep(self.wait_time)
-                break
+                try:
+                    self.channel.sendall(f'{command}\n')
+                except paramiko.ssh_exception as e:
+                    raise DevnetException(e)
+                else:
+                    time.sleep(self.wait_time)
+                    break
             else:
                 count += 1
                 time.sleep(self.wait_time)
@@ -114,19 +125,23 @@ class SSHClient:
                 count += 0
                 time.sleep(self.wait_time)
 
-                string = self.channel.recv(self.buffer).decode('UTF-8')
-                if self.debug:
-                    self.logger.debug(string)
+                try:
+                    string = self.channel.recv(self.buffer).decode('UTF-8')
+                except paramiko.ssh_exception as e:
+                    raise DevnetException(e)
+                else:
+                    if self.debug:
+                        self.logger.debug(string)
 
-                if string:
-                    if self.__password in string:
-                        string = string.replace(self.__password, '*' * 20)
+                    if string:
+                        if self.__password in string:
+                            string = string.replace(self.__password, '*' * 20)
 
-                session_output += string
-                self.output += string
-                if re.search(expect_string, string, flags=re.IGNORECASE | re.MULTILINE):
-                    self.prompt = session_output.splitlines()[-1]
-                    return session_output
+                    session_output += string
+                    self.output += string
+                    if re.search(expect_string, string, flags=re.IGNORECASE | re.MULTILINE):
+                        self.prompt = session_output.splitlines()[-1]
+                        return session_output
             else:
                 count += 1
                 time.sleep(self.wait_time)
@@ -191,26 +206,29 @@ class FTDClient:
         self.__conn.load_system_host_keys()
         self.__conn.set_missing_host_key_policy(paramiko.AutoAddPolicy)
 
-        self.__conn.connect(*args, **kwargs)
-        self.channel = self.__conn.invoke_shell(width=160, height=2048)
-        self.channel.settimeout(5.0)
-
-        count = 0
-        while True:
-            if count >= self.max_iterations:
-                sys.stdout.write('Max iterations exceeded!')
-                break
-
-            if self.channel.recv_ready():
-                count = 0
-                time.sleep(self.wait_time)
-
-                self.output += self.channel.recv(self.buffer).decode('UTF-8')
-                if re.search(expect_string, self.output, flags=re.IGNORECASE | re.MULTILINE):
+        try:
+            self.__conn.connect(*args, **kwargs)
+            self.channel = self.__conn.invoke_shell(width=160, height=2048)
+            self.channel.settimeout(5.0)
+        except paramiko.ssh_exception as e:
+            raise DevnetException(e)
+        else:
+            count = 0
+            while True:
+                if count >= self.max_iterations:
+                    sys.stdout.write('Max iterations exceeded!')
                     break
-            else:
-                count += 1
-                time.sleep(self.wait_time)
+
+                if self.channel.recv_ready():
+                    count = 0
+                    time.sleep(self.wait_time)
+
+                    self.output += self.channel.recv(self.buffer).decode('UTF-8')
+                    if re.search(expect_string, self.output, flags=re.IGNORECASE | re.MULTILINE):
+                        break
+                else:
+                    count += 1
+                    time.sleep(self.wait_time)
 
     def disconnect(self):
         if self.channel:
@@ -230,9 +248,13 @@ class FTDClient:
                 break
 
             if self.channel.send_ready():
-                self.channel.sendall(f'{command}\n')
-                time.sleep(self.wait_time)
-                break
+                try:
+                    self.channel.sendall(f'{command}\n')
+                except paramiko.ssh_exception as e:
+                    raise DevnetException(e)
+                else:
+                    time.sleep(self.wait_time)
+                    break
             else:
                 count += 1
                 time.sleep(self.wait_time)
@@ -247,19 +269,23 @@ class FTDClient:
                 count += 0
                 time.sleep(self.wait_time)
 
-                string = self.channel.recv(self.buffer).decode('UTF-8')
-                if self.debug:
-                    self.logger.debug(string)
+                try:
+                    string = self.channel.recv(self.buffer).decode('UTF-8')
+                except paramiko.ssh_exception as e:
+                    raise DevnetException(e)
+                else:
+                    if self.debug:
+                        self.logger.debug(string)
 
-                if string:
-                    if self.__password in string:
-                        string = string.replace(self.__password, '*' * 20)
+                    if string:
+                        if self.__password in string:
+                            string = string.replace(self.__password, '*' * 20)
 
-                session_output += string
-                self.output += string
-                if re.search(expect_string, string, flags=re.IGNORECASE | re.MULTILINE):
-                    self.prompt = session_output.splitlines()[-1]
-                    return session_output
+                    session_output += string
+                    self.output += string
+                    if re.search(expect_string, string, flags=re.IGNORECASE | re.MULTILINE):
+                        self.prompt = session_output.splitlines()[-1]
+                        return session_output
             else:
                 count += 1
                 time.sleep(self.wait_time)
