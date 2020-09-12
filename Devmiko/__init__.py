@@ -5,6 +5,7 @@ import warnings
 import sys
 import logging
 from tqdm import tqdm
+import socket
 
 warnings.filterwarnings(action='ignore', module='.*paramiko.*')
 
@@ -66,7 +67,8 @@ class SSHClient:
             self.__conn.connect(*args, **kwargs)
             self.channel = self.__conn.invoke_shell(width=160, height=2048)
             self.channel.settimeout(5.0)
-        except paramiko.ssh_exception as e:
+        except (paramiko.ssh_exception, socket.error) as e:
+            self.disconnect()
             raise DevnetException(e)
         else:
             count = 0
@@ -106,7 +108,8 @@ class SSHClient:
             if self.channel.send_ready():
                 try:
                     self.channel.sendall(f'{command}\n')
-                except paramiko.ssh_exception as e:
+                except (paramiko.ssh_exception, socket.error) as e:
+                    self.disconnect()
                     raise DevnetException(e)
                 else:
                     time.sleep(self.wait_time)
@@ -127,7 +130,8 @@ class SSHClient:
 
                 try:
                     string = self.channel.recv(self.buffer).decode('UTF-8')
-                except paramiko.ssh_exception as e:
+                except (paramiko.ssh_exception, socket.error) as e:
+                    self.disconnect()
                     raise DevnetException(e)
                 else:
                     if self.debug:
@@ -210,7 +214,8 @@ class FTDClient:
             self.__conn.connect(*args, **kwargs)
             self.channel = self.__conn.invoke_shell(width=160, height=2048)
             self.channel.settimeout(5.0)
-        except paramiko.ssh_exception as e:
+        except (paramiko.ssh_exception, socket.error) as e:
+            self.disconnect()
             raise DevnetException(e)
         else:
             count = 0
@@ -250,7 +255,8 @@ class FTDClient:
             if self.channel.send_ready():
                 try:
                     self.channel.sendall(f'{command}\n')
-                except paramiko.ssh_exception as e:
+                except (paramiko.ssh_exception, socket.error) as e:
+                    self.disconnect()
                     raise DevnetException(e)
                 else:
                     time.sleep(self.wait_time)
@@ -271,7 +277,8 @@ class FTDClient:
 
                 try:
                     string = self.channel.recv(self.buffer).decode('UTF-8')
-                except paramiko.ssh_exception as e:
+                except (paramiko.ssh_exception, socket.error) as e:
+                    self.disconnect()
                     raise DevnetException(e)
                 else:
                     if self.debug:
