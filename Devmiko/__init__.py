@@ -10,7 +10,11 @@ import socket
 warnings.filterwarnings(action='ignore', module='.*paramiko.*')
 
 
-class DevnetException(Exception):
+class DevmikoSSHException(Exception):
+    pass
+
+
+class DevmikoAuthenticationException(Exception):
     pass
 
 
@@ -67,9 +71,22 @@ class SSHClient:
             self.__conn.connect(*args, **kwargs)
             self.channel = self.__conn.invoke_shell(width=160, height=2048)
             self.channel.settimeout(5.0)
-        except (paramiko.ssh_exception, socket.error) as e:
+        except (paramiko.ssh_exception.AuthenticationException,
+                paramiko.ssh_exception.PartialAuthentication,
+                paramiko.ssh_exception.BadAuthenticationType,
+                paramiko.ssh_exception.PasswordRequiredException,
+                paramiko.ssh_exception.BadHostKeyException) as e:
             self.disconnect()
-            raise DevnetException(e)
+            raise DevmikoAuthenticationException(e)
+        except (paramiko.ssh_exception.NoValidConnectionsError,
+                paramiko.ssh_exception.SSHException,
+                paramiko.ssh_exception.ProxyCommandFailure,
+                paramiko.ssh_exception.ChannelException,
+                paramiko.ssh_exception.ConfigParseError,
+                paramiko.ssh_exception.CouldNotCanonicalize,
+                socket.error, socket.timeout, TypeError) as e:
+            self.disconnect()
+            raise DevmikoSSHException(e)
         else:
             count = 0
             while True:
@@ -108,9 +125,15 @@ class SSHClient:
             if self.channel.send_ready():
                 try:
                     self.channel.sendall(f'{command}\n')
-                except (paramiko.ssh_exception, socket.error) as e:
+                except (paramiko.ssh_exception.NoValidConnectionsError,
+                        paramiko.ssh_exception.SSHException,
+                        paramiko.ssh_exception.ProxyCommandFailure,
+                        paramiko.ssh_exception.ChannelException,
+                        paramiko.ssh_exception.ConfigParseError,
+                        paramiko.ssh_exception.CouldNotCanonicalize,
+                        socket.error, socket.timeout, TypeError) as e:
                     self.disconnect()
-                    raise DevnetException(e)
+                    raise DevmikoSSHException(e)
                 else:
                     time.sleep(self.wait_time)
                     break
@@ -130,9 +153,15 @@ class SSHClient:
 
                 try:
                     string = self.channel.recv(self.buffer).decode('UTF-8')
-                except (paramiko.ssh_exception, socket.error) as e:
+                except (paramiko.ssh_exception.NoValidConnectionsError,
+                        paramiko.ssh_exception.SSHException,
+                        paramiko.ssh_exception.ProxyCommandFailure,
+                        paramiko.ssh_exception.ChannelException,
+                        paramiko.ssh_exception.ConfigParseError,
+                        paramiko.ssh_exception.CouldNotCanonicalize,
+                        socket.error, socket.timeout, TypeError) as e:
                     self.disconnect()
-                    raise DevnetException(e)
+                    raise DevmikoSSHException(e)
                 else:
                     if self.debug:
                         self.logger.debug(string)
@@ -161,8 +190,26 @@ class SFTPClient:
         self.__conn.load_system_host_keys()
         self.__conn.set_missing_host_key_policy(paramiko.AutoAddPolicy)
 
-        self.__conn.connect(*args, **kwargs)
-        self.channel = self.__conn.open_sftp()
+        try:
+            self.__conn.connect(*args, **kwargs)
+        except (paramiko.ssh_exception.AuthenticationException,
+                paramiko.ssh_exception.PartialAuthentication,
+                paramiko.ssh_exception.BadAuthenticationType,
+                paramiko.ssh_exception.PasswordRequiredException,
+                paramiko.ssh_exception.BadHostKeyException) as e:
+            self.disconnect()
+            raise DevmikoAuthenticationException(e)
+        except (paramiko.ssh_exception.NoValidConnectionsError,
+                paramiko.ssh_exception.SSHException,
+                paramiko.ssh_exception.ProxyCommandFailure,
+                paramiko.ssh_exception.ChannelException,
+                paramiko.ssh_exception.ConfigParseError,
+                paramiko.ssh_exception.CouldNotCanonicalize,
+                socket.error, socket.timeout, TypeError) as e:
+            self.disconnect()
+            raise DevmikoSSHException(e)
+        else:
+            self.channel = self.__conn.open_sftp()
 
     def disconnect(self):
         if self.channel:
@@ -214,9 +261,22 @@ class FTDClient:
             self.__conn.connect(*args, **kwargs)
             self.channel = self.__conn.invoke_shell(width=160, height=2048)
             self.channel.settimeout(5.0)
-        except (paramiko.ssh_exception, socket.error) as e:
+        except (paramiko.ssh_exception.AuthenticationException,
+                paramiko.ssh_exception.PartialAuthentication,
+                paramiko.ssh_exception.BadAuthenticationType,
+                paramiko.ssh_exception.PasswordRequiredException,
+                paramiko.ssh_exception.BadHostKeyException) as e:
             self.disconnect()
-            raise DevnetException(e)
+            raise DevmikoAuthenticationException(e)
+        except (paramiko.ssh_exception.NoValidConnectionsError,
+                paramiko.ssh_exception.SSHException,
+                paramiko.ssh_exception.ProxyCommandFailure,
+                paramiko.ssh_exception.ChannelException,
+                paramiko.ssh_exception.ConfigParseError,
+                paramiko.ssh_exception.CouldNotCanonicalize,
+                socket.error, socket.timeout, TypeError) as e:
+            self.disconnect()
+            raise DevmikoSSHException(e)
         else:
             count = 0
             while True:
@@ -255,9 +315,15 @@ class FTDClient:
             if self.channel.send_ready():
                 try:
                     self.channel.sendall(f'{command}\n')
-                except (paramiko.ssh_exception, socket.error) as e:
+                except (paramiko.ssh_exception.NoValidConnectionsError,
+                        paramiko.ssh_exception.SSHException,
+                        paramiko.ssh_exception.ProxyCommandFailure,
+                        paramiko.ssh_exception.ChannelException,
+                        paramiko.ssh_exception.ConfigParseError,
+                        paramiko.ssh_exception.CouldNotCanonicalize,
+                        socket.error, socket.timeout, TypeError) as e:
                     self.disconnect()
-                    raise DevnetException(e)
+                    raise DevmikoSSHException(e)
                 else:
                     time.sleep(self.wait_time)
                     break
@@ -277,9 +343,15 @@ class FTDClient:
 
                 try:
                     string = self.channel.recv(self.buffer).decode('UTF-8')
-                except (paramiko.ssh_exception, socket.error) as e:
+                except (paramiko.ssh_exception.NoValidConnectionsError,
+                        paramiko.ssh_exception.SSHException,
+                        paramiko.ssh_exception.ProxyCommandFailure,
+                        paramiko.ssh_exception.ChannelException,
+                        paramiko.ssh_exception.ConfigParseError,
+                        paramiko.ssh_exception.CouldNotCanonicalize,
+                        socket.error, socket.timeout, TypeError) as e:
                     self.disconnect()
-                    raise DevnetException(e)
+                    raise DevmikoSSHException(e)
                 else:
                     if self.debug:
                         self.logger.debug(string)
