@@ -6,7 +6,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 setup(
     name='Devmiko',
     packages=['Devmiko'],
-    version='0.0.2',
+    version='0.0.3',
     license='MIT',
     description='A SSH client for systems network automation that uses paramiko.',
     long_description=long_description,
@@ -14,7 +14,7 @@ setup(
     author='Victor M Santiago',
     author_email='vsantiago113sec@gmail.com',
     url='https://github.com/vsantiago113/Devmiko',
-    download_url='https://github.com/vsantiago113/Devmiko/archive/0.0.2.tar.gz',
+    download_url='https://github.com/vsantiago113/Devmiko/archive/0.0.3.tar.gz',
     keywords=['paramiko', 'firepower', 'cisco', 'ftd', 'ssh'],
     python_requires='>=3.4.0',
     install_requires=[
